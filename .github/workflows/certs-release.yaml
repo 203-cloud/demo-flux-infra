@@ -1,0 +1,82 @@
+name: Build release artifact for certs
+
+on:
+  push:
+    branches:
+      - main
+    paths: 
+      - 'certs/**'
+      - '.github/workflows/certs-release.yaml'
+    tags:
+      - 'certs-v*'
+
+env:
+  ARTIFACT_NAME: certs
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+    latest:
+        name: Build latest from main
+        if: github.ref == 'refs/heads/main'
+        defaults:
+            run:
+                working-directory: ./${{ env.ARTIFACT_NAME }}
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout
+            uses: actions/checkout@v4
+          - name: Setup flux
+            uses: fluxcd/flux2/action@main
+            with:
+              version: latest
+          - name: Build latest artifact
+            run: |
+                echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u USERNAME --password-stdin
+                container_registry=ghcr.io/${{ github.repository }}
+                artifact_name=${{ env.ARTIFACT_NAME }}
+                flux push artifact oci://${container_registry}/${artifact_name}:$(git rev-parse --short HEAD) \
+                    --provider=azure \
+                    --reproducible \
+                    --path="." \
+                    --source="$(git config --get remote.origin.url)" \
+                    --revision="$(git branch --show-current)/$(git rev-parse HEAD)" || echo "Failed to push $artifact_name" >&2
+                flux tag artifact oci://${container_registry}/${artifact_name}:$(git rev-parse --short HEAD) \
+                    --provider=azure \
+                    --tag latest || echo "Failed to tag $artifact_name" >&2
+    release:
+        name: Build release from tag
+        if: github.ref == 'refs/tags/certs-v*'
+        defaults:
+            run:
+                working-directory: ./${{ env.ARTIFACT_NAME }}
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout
+            uses: actions/checkout@v4
+          - name: Setup flux
+            uses: fluxcd/flux2/action@main
+            with:
+              version: latest
+          - name: Git tag
+            id: git_tag
+            run: |
+                tag=${GITHUB_REF/refs\/tags\/${{ env.ARTIFACT_NAME }}-/}
+                echo "tag=${tag}" >> $GITHUB_OUTPUT
+          - name: Build release artifact
+            run: |
+                echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u USERNAME --password-stdin
+                container_registry=ghcr.io/${{ github.repository }}
+                artifact_name=${{ env.ARTIFACT_NAME }}
+                flux push artifact oci://${container_registry}/${artifact_name}:$(git rev-parse --short HEAD) \
+                    --provider=azure \
+                    --reproducible \
+                    --path="." \
+                    --source="$(git config --get remote.origin.url)" \
+                    --revision="$(git branch --show-current)/$(git rev-parse HEAD)" || echo "Failed to push $artifact_name" >&2
+                flux tag artifact oci://${container_registry}/${artifact_name}:$(git rev-parse --short HEAD) \
+                    --provider=azure \
+                    --tag ${{ steps.git_tag.outputs.tag }} || echo "Failed to tag $artifact_name" >&2
+          

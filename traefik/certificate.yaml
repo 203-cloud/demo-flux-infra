@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: podinfo
+  namespace: podinfo
+spec:
+  secretName: ssl-cert
+  dnsNames:
+    - "dev.example.com"
+  issuerRef:
+    name: acme
+    kind: ClusterIssuer
