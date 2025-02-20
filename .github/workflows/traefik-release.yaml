@@ -38,13 +38,13 @@ jobs:
                 container_registry=ghcr.io/${{ github.repository }}
                 artifact_name=${{ env.ARTIFACT_NAME }}
                 flux push artifact oci://${container_registry}/${artifact_name}:$(git rev-parse --short HEAD) \
-                    --provider=azure \
+                    --provider=generic \
                     --reproducible \
                     --path="." \
                     --source="$(git config --get remote.origin.url)" \
                     --revision="$(git branch --show-current)/$(git rev-parse HEAD)" || echo "Failed to push $artifact_name" >&2
                 flux tag artifact oci://${container_registry}/${artifact_name}:$(git rev-parse --short HEAD) \
-                    --provider=azure \
+                    --provider=generic \
                     --tag latest || echo "Failed to tag $artifact_name" >&2
     release:
         name: Build release from tag
@@ -71,12 +71,12 @@ jobs:
                 container_registry=ghcr.io/${{ github.repository }}
                 artifact_name=${{ env.ARTIFACT_NAME }}
                 flux push artifact oci://${container_registry}/${artifact_name}:$(git rev-parse --short HEAD) \
-                    --provider=azure \
+                    --provider=generic \
                     --reproducible \
                     --path="." \
                     --source="$(git config --get remote.origin.url)" \
                     --revision="$(git branch --show-current)/$(git rev-parse HEAD)" || echo "Failed to push $artifact_name" >&2
                 flux tag artifact oci://${container_registry}/${artifact_name}:$(git rev-parse --short HEAD) \
-                    --provider=azure \
+                    --provider=generic \
                     --tag ${{ steps.git_tag.outputs.tag }} || echo "Failed to tag $artifact_name" >&2
           
