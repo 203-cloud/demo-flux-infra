@@ -4,6 +4,9 @@ metadata:
   name: traefik
   namespace: flux-system
 spec:
+  dependsOn:
+    - name: certs
+      namespace: flux-system
   sourceRef:
     kind: OCIRepository
     name: traefik
