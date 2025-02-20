@@ -1,0 +1,35 @@
+name: Promote config from dev to staging
+
+on:
+  workflow_dispatch: {}
+
+env:
+  ARTIFACT_NAME: deploy
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+    latest:
+        name: Promote dev tag to staging
+        defaults:
+            run:
+                working-directory: ./${{ env.ARTIFACT_NAME }}
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout
+            uses: actions/checkout@v4
+          - name: Setup flux
+            uses: fluxcd/flux2/action@main
+            with:
+              version: latest
+          - name: Build latest artifact
+            run: |
+                echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u USERNAME --password-stdin
+                container_registry=ghcr.io/${{ github.repository }}
+                artifact_name=${{ env.ARTIFACT_NAME }}
+                flux tag artifact oci://${container_registry}/${artifact_name}:dev \
+                    --provider=generic \
+                    --tag staging || echo "Failed to tag $artifact_name" >&2
+          
