@@ -21,7 +21,7 @@ jobs:
           - name: Checkout
             uses: actions/checkout@v4
           - name: Setup flux
-            uses: fluxcd/flux2/action@main
+            uses: fluxcd/flux2/action@3b42b200d376430f0e24d35f1a600447d92da531
             with:
               version: latest
           - name: Build latest artifact
